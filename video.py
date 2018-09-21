@@ -20,7 +20,7 @@ i=0
 while success:
 	NuevoVideo.write(frame)
 	i+=1
-	nombre='img/'+str(i)+'.jpg'
+	nombre='img-original/'+str(i)+'.jpg'
 	print(nombre)
 	cv2.imwrite(nombre, frame)
 	success, frame = video.read()
