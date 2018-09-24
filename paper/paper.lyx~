@@ -1,0 +1,1891 @@
+#LyX 2.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 544
+\begin_document
+\begin_header
+\save_transient_properties true
+\origin unavailable
+\textclass article
+\use_default_options true
+\maintain_unincluded_children false
+\language english
+\language_package default
+\inputencoding auto
+\fontencoding global
+\font_roman "default" "default"
+\font_sans "default" "default"
+\font_typewriter "default" "default"
+\font_math "auto" "auto"
+\font_default_family default
+\use_non_tex_fonts false
+\font_sc false
+\font_osf false
+\font_sf_scale 100 100
+\font_tt_scale 100 100
+\use_microtype false
+\use_dash_ligatures true
+\graphics default
+\default_output_format default
+\output_sync 0
+\bibtex_command default
+\index_command default
+\paperfontsize default
+\use_hyperref false
+\papersize default
+\use_geometry false
+\use_package amsmath 1
+\use_package amssymb 1
+\use_package cancel 1
+\use_package esint 1
+\use_package mathdots 1
+\use_package mathtools 1
+\use_package mhchem 1
+\use_package stackrel 1
+\use_package stmaryrd 1
+\use_package undertilde 1
+\cite_engine basic
+\cite_engine_type default
+\biblio_style plain
+\use_bibtopic false
+\use_indices false
+\paperorientation portrait
+\suppress_date false
+\justification true
+\use_refstyle 1
+\use_minted 0
+\index Index
+\shortcut idx
+\color #008000
+\end_index
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\paragraph_indentation default
+\is_math_indent 0
+\math_numbering_side default
+\quotes_style english
+\dynamic_quotes 0
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+\tracking_changes false
+\output_changes false
+\html_math_output 0
+\html_css_as_file 0
+\html_be_strict false
+\end_header
+
+\begin_body
+
+\begin_layout Title
+FutbolPY: Detectar transiciones de cámaras en partidos de fútbol
+\end_layout
+
+\begin_layout Author
+Juan Puca, Aaron Soria, Nicolás de Lima
+\end_layout
+
+\begin_layout Abstract
+El presente trabajo se centra en la implementación de expresiones matemáticas
+ y algoritmos para la detección de cambios de cámara, como así también el
+ análisis de las propiedades y los estadísticos de los frames que componen
+ un video.
+ 
+\end_layout
+
+\begin_layout Section
+Introducción
+\end_layout
+
+\begin_layout Standard
+El problema a tratar consiste en determinar en que momento se produce la
+ transición de una cámara a otra en las trasmisiones de un partido de futbol
+ por medio de software y a partir del mismo reconstruir a cada uno de los
+ segmentos como videos.
+\end_layout
+
+\begin_layout Section
+Primeros pasos
+\end_layout
+
+\begin_layout Standard
+Como una primera aproximación intuitiva, para detectar la transiciones suaves
+ en un video, surgiría la posibilidad de analizar como si fuese la continuidad
+ de una función f(x) a la media y la mediana que obtenemos a partir de cada
+ uno de los frames en HSV y HSL de un videos.
+ Entonces tenemos, analizando únicamente el canal H su media y mediana correspon
+diente:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename 360-media.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\begin_inset Graphics
+	filename 360-mediana.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En los gráficos anteriores la variable x representa el número de frame,
+ y la variable y representa la media de ese frame en el canal H.
+ Podríamos interpretar que si analizarnos los gráficos como una función
+ matemática, los sectores en donde claramente se observa discontinuidad
+ indicaría un evidente cambio de cámara.
+ Sin embargo, basta con hacer una simple una comprobación visual de los
+ frames, de que estos saltos no representan ni la más mínima posibilidad
+ de una transición.
+ De esta forma podemos comprender, que necesitamos de una métrica que sea
+ mucho más descriptiva [1], y en este aspecto la distancia de Bhattacharyya
+ nos permite resolver este problema [2].
+\end_layout
+
+\begin_layout Section
+Distancia de Bhattacharyya
+\end_layout
+
+\begin_layout Standard
+Es utilizado para medir la similitud entre dos distribuciones [3] en en
+ este caso los histogramas de las imágenes (H1, H2), 
+\begin_inset Formula $\bar{H1}$
+\end_inset
+
+ y 
+\begin_inset Formula $\bar{H2}$
+\end_inset
+
+sus medias correspondientes:
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+d=\sqrt{1-\frac{1}{\sqrt{\bar{H1}\bar{H2}N^{2}}}\sum\sqrt{H1(I)}H2(I)}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Obteniendo valores que oscilan entre 0 a 1, siendo el valor 0 que representa
+ la distancia más cercana, es decir son iguales las imágenes.
+ 
+\end_layout
+
+\begin_layout Standard
+Para agregarlo a la solución correspondiente se ha procedido a codificarlo.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def distancia (a,b,n=1): 
+\end_layout
+
+\begin_layout Plain Layout
+
+    sumatoria=np.sum(np.sqrt(a*b))
+\end_layout
+
+\begin_layout Plain Layout
+
+    medio= 1/np.sqrt(np.average(a) * np.average(b)*n*n) 
+\end_layout
+
+\begin_layout Plain Layout
+
+    return math.sqrt((1-(medio*sumatoria)))
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Para comprobar que el código es correcto se realizaron algunas pruebas simulando
+ los valores del canal H [4] y con dos frames de un video [5].
+ 
+\end_layout
+
+\begin_layout Section
+Desarrollo e Implementación
+\end_layout
+
+\begin_layout Standard
+El desarrollo del software se realizo en el entorno Jupyter Notebook usando
+ el lenguaje de programación Python en la versión 3.
+ La solución se encuentra disponible en su repositorio en GitHub [6] y se
+ encuentra dividido en módulos que se detallarán a continuación.
+ 
+\end_layout
+
+\begin_layout Subsection
+Módulo de Entrada
+\end_layout
+
+\begin_layout Standard
+Módulo que permite la recepción de opciones y argumentos desde la linea
+ de comando o terminal, esto es a fin de facilitar el uso de FutbolPy como
+ una herramienta.
+ 
+\end_layout
+
+\begin_layout Subsection
+Módulo Captura de Frames
+\end_layout
+
+\begin_layout Standard
+Permite obtener todos los frames no dañados, guardarlos a cada uno como
+ una imagen (esto es sumamente útil para comprobar), y obtener la cantidad
+ de frames (teniendo en cuenta que OpenCV no provee una forma efectiva de
+ obtener la cantidad de frames útiles/dañados).
+\end_layout
+
+\begin_layout Standard
+Mediante una rutina optimizada de código, obtenemos los frames que posteriorment
+e los utilizaremos para determinar cuándo se producen las transiciones en
+ un video.
+ También se encarga de enumerar los frames, esto es necesario para las posterior
+es funcionalidades.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def capturarFrames(filename,guardar):
+\end_layout
+
+\begin_layout Plain Layout
+
+    if guardar:
+\end_layout
+
+\begin_layout Plain Layout
+
+        path=os.path.dirname(os.path.abspath(filename))
+\end_layout
+
+\begin_layout Plain Layout
+
+        os.mkdir(path+'/img-'+filename)
+\end_layout
+
+\begin_layout Plain Layout
+
+    video= cv2.VideoCapture(filename)
+\end_layout
+
+\begin_layout Plain Layout
+
+    i=0
+\end_layout
+
+\begin_layout Plain Layout
+
+    success, frame = video.read()
+\end_layout
+
+\begin_layout Plain Layout
+
+    while success: 
+\end_layout
+
+\begin_layout Plain Layout
+
+        i+=1
+\end_layout
+
+\begin_layout Plain Layout
+
+        if guardar:
+\end_layout
+
+\begin_layout Plain Layout
+
+            nombre = 'img-'+filename+'/'+str(i)+'.jpg'
+\end_layout
+
+\begin_layout Plain Layout
+
+            cv2.imwrite(nombre, frame) 
+\end_layout
+
+\begin_layout Plain Layout
+
+        success, frame = video.read()
+\end_layout
+
+\begin_layout Plain Layout
+
+    return i
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection
+Módulo Captura de Distancias
+\end_layout
+
+\begin_layout Standard
+Es aquí en qué aplicación de los conceptos matemáticos anteriormente desarrollad
+os, los que nos darán la pauta que nos permitirá distinguir y una primera
+ idea de la composición del video con respecto a distintas cámaras.
+ El módulo realiza lo siguiente:
+\end_layout
+
+\begin_layout Standard
+- Recorrer al video considerando a todos los frames.
+\end_layout
+
+\begin_layout Standard
+- Realizar histograma normalizado en base al canal Hue del frame 
+\end_layout
+
+\begin_layout Standard
+- Comparar la distancia entre el frame anterior con respecto al frame actual.
+\end_layout
+
+\begin_layout Standard
+- Guardar los valores de las distancia en un arreglo.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def obtenerDistancias(file, comparaciones):
+\end_layout
+
+\begin_layout Plain Layout
+
+    video= cv2.VideoCapture(file)
+\end_layout
+
+\begin_layout Plain Layout
+
+    valores = []
+\end_layout
+
+\begin_layout Plain Layout
+
+    hbins=np.arange(0,179) # rango para canal H
+\end_layout
+
+\begin_layout Plain Layout
+
+    # Frame 1
+\end_layout
+
+\begin_layout Plain Layout
+
+    i=0
+\end_layout
+
+\begin_layout Plain Layout
+
+    success, frame = video.read()
+\end_layout
+
+\begin_layout Plain Layout
+
+    hsv = cv2.cvtColor(frame, cv2.COLOR_BGR2HSV)
+\end_layout
+
+\begin_layout Plain Layout
+
+    h1,s1,v1 = cv2.split(hsv); 
+\end_layout
+
+\begin_layout Plain Layout
+
+    # HIST1
+\end_layout
+
+\begin_layout Plain Layout
+
+    hist1, bins = np.histogram(h1,bins=hbins,density=True)
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    while success:
+\end_layout
+
+\begin_layout Plain Layout
+
+        i+=1
+\end_layout
+
+\begin_layout Plain Layout
+
+        success, frame2 = video.read()
+\end_layout
+
+\begin_layout Plain Layout
+
+        if i <= comparaciones:
+\end_layout
+
+\begin_layout Plain Layout
+
+            hsv2= cv2.cvtColor(frame2, cv2.COLOR_BGR2HSV)
+\end_layout
+
+\begin_layout Plain Layout
+
+            h2,s2,v2 = cv2.split(hsv2) 
+\end_layout
+
+\begin_layout Plain Layout
+
+            # HISTN
+\end_layout
+
+\begin_layout Plain Layout
+
+            hist2, bins = np.histogram(h2,bins=hbins,density=True)
+\end_layout
+
+\begin_layout Plain Layout
+
+            valor=distancia(hist1,hist2, len(hbins)-1)
+\end_layout
+
+\begin_layout Plain Layout
+
+            valores.append(valor)
+\end_layout
+
+\begin_layout Plain Layout
+
+            hist1=hist2
+\end_layout
+
+\begin_layout Plain Layout
+
+    return(valores)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Como una subutilidad para este módulo se realizo un código para exportar
+ los datos encontrados hacia un texto plano, con el fin de brindar una salida
+ para herramientas externas de análisis de datos.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def exportData(file, myarray):
+\end_layout
+
+\begin_layout Plain Layout
+
+    myfile=file+".txt"
+\end_layout
+
+\begin_layout Plain Layout
+
+    file = open(myfile,"w")
+\end_layout
+
+\begin_layout Plain Layout
+
+    for el in myarray:
+\end_layout
+
+\begin_layout Plain Layout
+
+          file.write(str(el)+"
+\backslash
+n")
+\end_layout
+
+\begin_layout Plain Layout
+
+    file.close()
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+El filtrado deberá permitir seleccionar aquellos valores que sean superiores
+ a un valor de criterio, es decir realizar un filtro pasa-alto sobre las
+ distancias obtenidas.
+\end_layout
+
+\begin_layout Standard
+El primer paso es establecer un criterio para la aceptación/rechazo de las
+ distancias obtenidas para ello se utiliza el criterio establecido en [7].
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+td=\frac{\sum d[i]}{N}+\sqrt{\frac{\sum(d[i]-\bar{d})^{2}}{N-1}}
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Formula 
+\[
+tc=2td
+\]
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Siendo td un valor representativo de las instancias de movimiento graduales
+ de una imagen y tc un valor representativo de un corte.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\footnotesize\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def criterio(dArray,n,precision=1):
+\end_layout
+
+\begin_layout Plain Layout
+
+    qua= np.power(dArray - np.average(dArray),2)
+\end_layout
+
+\begin_layout Plain Layout
+
+    parte1=np.sum(dArray)/n
+\end_layout
+
+\begin_layout Plain Layout
+
+    parte2=np.sqrt(np.sum(qua)/(n-1))
+\end_layout
+
+\begin_layout Plain Layout
+
+    return 2* (parte1 + parte2)*precision
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Se debe tener en cuenta que se ha agregado un valor de precisión que permita
+ brindar una forma para aceptar/rechazar máximos manualmente.
+ No se debe confundir al mismo con el valor de efectividad.
+\end_layout
+
+\begin_layout Standard
+Al implementar el filtrado se establecerá que:
+\end_layout
+
+\begin_layout Standard
+- los valores superiores al criterio serán considerados
+\end_layout
+
+\begin_layout Standard
+- los valores inferiores serán filtrados (se les asigna el valor 0).
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+valorCriterio=criterio(arrayDistancia,178,0.95)
+\end_layout
+
+\begin_layout Plain Layout
+
+print("criterio:", valorCriterio) 
+\end_layout
+
+\begin_layout Plain Layout
+
+filtro = (np.where(arrayDistancia>valorCriterio,arrayDistancia,0))
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+plt.plot(filtro)
+\end_layout
+
+\begin_layout Plain Layout
+
+plt.plot(arrayDistancia)
+\end_layout
+
+\begin_layout Plain Layout
+
+plt.show()
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+En base a lo realizado para el video 
+\begin_inset Quotes eld
+\end_inset
+
+360.mp4
+\begin_inset Quotes erd
+\end_inset
+
+ obtenemos un valor criterio de 0.07385399045684472 para un valor de precisión
+ del criterio del 95%.
+ A continuación se mostrará los valores resultantes de transición de cámaras.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="3" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# transición
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# comparación de frames
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+valor de distancia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+60
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.07419038254152195
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+120
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.10832220838731185
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Si superponemos las gráficas de las distancia con respecto al filtro pasa-altos
+ podemos ver su utilidad.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename 360-filtrado.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Con lo que podemos determinar que existen dos transiciones:
+\end_layout
+
+\begin_layout Standard
+- comparación #60: correspondiente al frame 60-61
+\end_layout
+
+\begin_layout Standard
+- comparación #120: correspondiente al frame 120-121
+\end_layout
+
+\begin_layout Subsection
+Módulo Reconstrucción de Vistas
+\end_layout
+
+\begin_layout Standard
+Una vez finalizado el análisis nos queda reconstruir cada vista, considerando
+ a una vista como el conjunto de frames representativos a lo capturado por
+ cada cámara.
+ Este módulo se de encargará de ello, lo único necesario que se le debe
+ indicar al módulo es el frame incial y el frame final perteneciente al
+ video.
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+def reconstruir(filename, inicio, fin):
+\end_layout
+
+\begin_layout Plain Layout
+
+    video= cv2.VideoCapture(filename)
+\end_layout
+
+\begin_layout Plain Layout
+
+    
+\end_layout
+
+\begin_layout Plain Layout
+
+    fps=video.get(cv2.CAP_PROP_FPS)
+\end_layout
+
+\begin_layout Plain Layout
+
+    size = (int(video.get(cv2.CAP_PROP_FRAME_WIDTH)),
+\end_layout
+
+\begin_layout Plain Layout
+
+        int(video.get(cv2.CAP_PROP_FRAME_HEIGHT)))
+\end_layout
+
+\begin_layout Plain Layout
+
+    codec =cv2.VideoWriter_fourcc(*'XVID')
+\end_layout
+
+\begin_layout Plain Layout
+
+\end_layout
+
+\begin_layout Plain Layout
+
+    nuevoNombre,extension= filename.split(".")
+\end_layout
+
+\begin_layout Plain Layout
+
+    nuevoNombre+="-"+str(fin)+'.avi'
+\end_layout
+
+\begin_layout Plain Layout
+
+    nuevoVideo= cv2.VideoWriter(nuevoNombre,codec,fps,size)   
+\end_layout
+
+\begin_layout Plain Layout
+
+    i=0
+\end_layout
+
+\begin_layout Plain Layout
+
+    success, frame = video.read()
+\end_layout
+
+\begin_layout Plain Layout
+
+    while success:
+\end_layout
+
+\begin_layout Plain Layout
+
+        if i>=inicio and i<=fin:
+\end_layout
+
+\begin_layout Plain Layout
+
+            nuevoVideo.write(frame)            
+\end_layout
+
+\begin_layout Plain Layout
+
+        i+=1
+\end_layout
+
+\begin_layout Plain Layout
+
+        success, frame = video.read()
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+Para producir los nuevos videos se recorrerá el video original 
+\end_layout
+
+\begin_layout Standard
+\begin_inset listings
+lstparams "language=Python,basicstyle={\small\rmfamily}"
+inline false
+status open
+
+\begin_layout Plain Layout
+
+indice=0
+\end_layout
+
+\begin_layout Plain Layout
+
+anterior=0
+\end_layout
+
+\begin_layout Plain Layout
+
+for el in filtro:
+\end_layout
+
+\begin_layout Plain Layout
+
+    indice+=1
+\end_layout
+
+\begin_layout Plain Layout
+
+    if el>0:
+\end_layout
+
+\begin_layout Plain Layout
+
+        print("transición: ",indice,el)
+\end_layout
+
+\begin_layout Plain Layout
+
+        reconstruir(file, anterior, indice)
+\end_layout
+
+\begin_layout Plain Layout
+
+        anterior=indice
+\end_layout
+
+\begin_layout Plain Layout
+
+    if indice==cantFrames-1:
+\end_layout
+
+\begin_layout Plain Layout
+
+        reconstruir(file, anterior, cantFrames)
+\end_layout
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename video.png
+	lyxscale 30
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Pruebas
+\end_layout
+
+\begin_layout Standard
+Para probar que el resultado obtenido no es un hecho aislado, procedemos
+ a utilizar la misma implementación con otros videos.
+\end_layout
+
+\begin_layout Subsection*
+Alonso
+\end_layout
+
+\begin_layout Standard
+Correspondiente al segundo gol realizado por el 'Pichi' Alonso en el partido
+ de Barcelona FC vs IFK Goteborg por la Copa de Europa 1985-1986 (https://youtu.b
+e/A1Ef19us99s), en un segmento de video de duración 00:00:08 considerando
+ 81 frames.
+ Se encuentra un cambio de cámara en la comparación #69 (frames 69-70).
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename F:/futbolpy/graficas/alonso.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# transición
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# comparación de frames
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+valor de distancia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+69
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.7872924316856856
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename alonso.png
+	lyxscale 30
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Contra
+\end_layout
+
+\begin_layout Standard
+Video del partido amistoso Francia-Italia (duración: 00:00:23, frames: 714)
+ del 01/06/18 (https://www.youtube.com/watch?v=Ajk6yyxX-gU) correspondiente
+ a una jugada ofensiva que termina en penal.
+ Se encuentra una transición de cámara en el frame 619-620.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename F:/futbolpy/graficas/contra.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="2" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# transición
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# comparación de frames
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+valor de distancia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+619
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.23031293079522488
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename contra.png
+	lyxscale 30
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Diego
+\end_layout
+
+\begin_layout Standard
+Segmento de video (duración: 00:00:37, frames: 172) correspondiente al Gol
+ del Siglo (https://youtu.be/jOz2uGMTA2w), en el partido Argentina-Inglaterra
+ en la Copa del Mundo México 1986.
+ 
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename F:/futbolpy/graficas/diego.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="4" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# transición
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# comparación de frames
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+valor de distancia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+37
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.3277215659245849
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+95
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.25680995606178847
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+166
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.22836472847999076
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename diego.png
+	lyxscale 30
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Subsection*
+Tafirol
+\end_layout
+
+\begin_layout Standard
+Comercial sobre un analgésico en el que se hace representación de un partido
+ de fútbol y en el que ocurren diversas transiciones bruscas de cámara.
+ Se eligio el video para ampliar el alcance de la implementación y no solo
+ limitarla a cuestiones de partidos oficiales.
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename F:/futbolpy/graficas/tafirol.png
+	lyxscale 50
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Tabular
+<lyxtabular version="3" rows="12" columns="3">
+<features tabularvalignment="middle">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<column alignment="center" valignment="top">
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# transición
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+# comparación de frames
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+valor de distancia
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+1
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.7925642234685557
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+2
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+8
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5366641179534776
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+3
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+20
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.6295866567736305
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+4
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+42
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5730945611974225
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+5
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+52
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.6030668861090255
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+6
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+66
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.45315613197150806
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+7
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+73
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.4631639027431631
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+8
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+78
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5841412393214311
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+9
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+84
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.6131960378464988
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+10
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+107
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5948208696254212
+\end_layout
+
+\end_inset
+</cell>
+</row>
+<row>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+11
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+117
+\end_layout
+
+\end_inset
+</cell>
+<cell alignment="center" valignment="top" topline="true" bottomline="true" leftline="true" rightline="true" usebox="none">
+\begin_inset Text
+
+\begin_layout Plain Layout
+0.5496904945741801
+\end_layout
+
+\end_inset
+</cell>
+</row>
+</lyxtabular>
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Standard
+\begin_inset Graphics
+	filename tafirol.png
+	lyxscale 30
+	scale 50
+
+\end_inset
+
+
+\end_layout
+
+\begin_layout Section
+Conclusiones
+\end_layout
+
+\begin_layout Standard
+La solución al realizar las graficas nos brinda valores pico que indican
+ una alta probabilidad de que allí haya ocurrido una transición, incluso
+ haciendo una simple control visual se puede constatar esto.
+ El criterio empleado no tiene un 100% de efectividad por lo cual se ha
+ brindado en la herramienta la posibilidad de ajustarlo a fin de aceptar/rechaza
+r probables valores de transición.
+\end_layout
+
+\begin_layout Section
+Futuras líneas de investigación
+\end_layout
+
+\begin_layout Standard
+Para el futuro se propone:
+\end_layout
+
+\begin_layout Standard
+- Ampliar el alcance sobre videos de diversos tipos (deportivos o comerciales)
+\end_layout
+
+\begin_layout Standard
+- Automatizar más las pruebas
+\end_layout
+
+\begin_layout Standard
+- Brindar más mecanismos para mejorar el criterio de aceptación/rechazo
+\end_layout
+
+\begin_layout Standard
+- Brindar una interfaz interactiva para mostrar resultados
+\end_layout
+
+\begin_layout Standard
+- Brindar más características para establecer la solución como un editor
+ de videos.
+ 
+\end_layout
+
+\begin_layout Section
+Referencias
+\end_layout
+
+\begin_layout Standard
+Links y Bibliografía:
+\end_layout
+
+\begin_layout Standard
+[1] Pruebas con medidas https://github.com/jrodrigopuca/futbolpy/blob/master/vide
+o-frame.ipynb]
+\end_layout
+
+\begin_layout Standard
+[2] Temporal Segmentation of Association Football from TV Broadcasting,
+ Fig 10, Siles, Junio 2013
+\end_layout
+
+\begin_layout Standard
+[3] Bhattacharyya, A (1943) "On a measure of divergence between two statistical
+ populations defined by their probability distributions", Bulletin of the
+ Calcutta Mathematical Society, 35: 99–109 MR 0010358
+\end_layout
+
+\begin_layout Standard
+[4] Pruebas con las distancias usando dos arreglos [https://github.com/jrodrigopu
+ca/futbolpy/blob/master/distancia.ipynb]
+\end_layout
+
+\begin_layout Standard
+[5] Obtener la distancia de dos frames del video (frames: 1,101) [https://github.
+com/jrodrigopuca/futbolpy/blob/master/video-distancia.ipynb]
+\end_layout
+
+\begin_layout Standard
+[6] Repositorio de la solución [https://github.com/jrodrigopuca/futbolpy]
+\end_layout
+
+\begin_layout Standard
+[7] Temporal Segmentation of Association Football from TV Broadcasting,
+ Fig 11, Siles, Junio 2013
+\end_layout
+
+\end_body
+\end_document
