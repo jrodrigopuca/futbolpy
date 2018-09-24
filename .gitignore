@@ -4,3 +4,4 @@ launch.json
 ~$comparar.xlsx
 /img*
 /test
+.vscode
