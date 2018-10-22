@@ -11,12 +11,14 @@ int main (int argc, char **argv)
 {
   std::string origindir = argv[1];
   std::string destdir = argv[2];
+  
+ 
   printf ("Checking if processor is available...");
-  if (system(NULL)) puts ("Ok");
-    else exit (EXIT_FAILURE);
   printf ("Executing python command \n");
   
-  
+  std::string my_command="python get_frames.py "+ origindir + " " + destdir;
+  system ((my_command).c_str());
+ 
    time_t mytime = time(NULL);
    char * time_str = ctime(&mytime);
   printf("Current Time : %s\n", time_str);
@@ -28,10 +30,12 @@ int main (int argc, char **argv)
   printf("enter to a parallel region");
  #pragma omp parallel for num_threads (4)
   for (int i=1;i<=329; i++){ //modificar la costante n para poder hacer independiente de los frames
-    std::string my_command="python rgb_hsv.py " + destdir +"/"+ to_string(i) +".jpg";
-    system ((my_command).c_str());    
+    std::string my_command2="python rgb_hsv.py " + destdir +"/"+ to_string(i) +".jpg";
+    system ((my_command2).c_str());    
   }
 
+    my_command="python reconstruir.py "+ destdir +" .jpg "+destdir+"output.mp4 1 " + to_string(329); //cambiar este hardcode
+    system ((my_command).c_str());
   
     time_t mytime2 = time(NULL);
     char * time_str2 = ctime(&mytime2);
