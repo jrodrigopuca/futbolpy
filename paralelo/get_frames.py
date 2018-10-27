@@ -20,12 +20,11 @@ try:
     while success:
         nombre=str(count)
 #se la el formato al nombre
-        #while (len(nombre) != length):
-        #    nombre="0"+nombre
+        while (len(nombre) != length):
+            nombre="0"+nombre
 #Se le defina la ruta completa :v
         cv2.imwrite(your_destiniy_path+nombre+".jpg", image)
         success,image = vidcap.read()
         count += 1
-    print(0)
 except ValueError:
     print(-1)

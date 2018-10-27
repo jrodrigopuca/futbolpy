@@ -64,12 +64,4 @@ your_end=int(sys.argv[5])
 #your_init=1
 #your_end=329
 
-
-print(your_origin_path)
-print(your_extension)
-print(your_destiny_path)
-print(your_init)
-print(your_end)
-
-
 rebuild(your_origin_path,your_extension,your_destiny_path,your_init,your_end)
